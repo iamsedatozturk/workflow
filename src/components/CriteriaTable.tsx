@@ -95,20 +95,33 @@ function CriteriaEditor({
             />
           </Field>
         </div>
-        <Field label="Onaylanacak kişi">
+        <Field label="Onaylayacak Kişi">
           <input
+            required={form.kind === 'Approval' || form.kind === 'Inform'}
             value={form.approver}
             placeholder="Örn. Mehmet Yılmaz"
-            onChange={(event) => setField('approver', event.target.value)}
+            onChange={(event) =>
+              onChange({
+                ...form,
+                approver: event.target.value,
+                informPerson: event.target.value,
+              })
+            }
           />
         </Field>
-        <Field label="Bilgilendirme yapılacak personel">
+        {false && <Field label="Bilgilendirme yapılacak personel" hidden>
           <input
             value={form.informPerson}
             placeholder="Örn. Muhasebe"
-            onChange={(event) => setField('informPerson', event.target.value)}
+            onChange={(event) =>
+              onChange({
+                ...form,
+                approver: event.target.value,
+                informPerson: event.target.value,
+              })
+            }
           />
-        </Field>
+        </Field>}
         {form.kind === 'Compare' && (
           <div className="compare-outcomes">
             <div className="mini-title">
@@ -252,8 +265,8 @@ export function CriteriaTable({
       (form.compareOutcomes || []).filter((_, itemIndex) => itemIndex !== index),
     )
   }
-  const targetSelect = (value, onSelectTarget) => (
-    <select value={value || ''} onChange={(event) => onSelectTarget(event.target.value)}>
+  const targetSelect = (value, onSelectTarget, required = false) => (
+    <select required={required} value={value || ''} onChange={(event) => onSelectTarget(event.target.value)}>
       {targetOptions.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}
@@ -261,6 +274,7 @@ export function CriteriaTable({
       ))}
     </select>
   )
+  const toggleRow = (id) => onSelect(id === selectedId ? '' : id)
 
   return (
     <section className="surface criteria-manager">
@@ -300,8 +314,7 @@ export function CriteriaTable({
               <th>Id</th>
               <th>Tip</th>
               <th>Başlık / Kural</th>
-              <th>Bağlantı 1</th>
-              <th>Bağlantı 2</th>
+              <th>Bağlantılar</th>
               <th>İşlem</th>
             </tr>
           </thead>
@@ -309,34 +322,39 @@ export function CriteriaTable({
             {criteria.map((item) => {
               const isSelected = item.id === selectedId
               const isActive = item.id === activeNodeId
-              const primaryTarget = item.nextOnTrue || item.nextOnApprove || item.nextOnStart
-              const secondaryTarget = item.nextOnFalse || item.nextOnReject
+              const connectionSummary = criteriaConnectionSummary(item, criteria)
 
               return (
                 <React.Fragment key={item.id}>
                   <tr
                     className={classNames({ 'selected-row': isSelected, 'active-row': isActive })}
-                    onClick={() => onSelect(item.id)}
+                    onClick={() => toggleRow(item.id)}
                   >
                     <td>
                       <strong>{item.id}</strong>
                       {isActive && <span className="active-step-badge">Aktif</span>}
                     </td>
                     <td>{kindOptions.find((option) => option.value === item.kind)?.label}</td>
-                    <td>{criteriaSummary(item)}</td>
-                    <td>{targetTitle(criteria, primaryTarget)}</td>
-                    <td>{targetTitle(criteria, secondaryTarget)}</td>
+                    <td>{criteriaSummaryContent(item)}</td>
+                    <td>{connectionSummary}</td>
                     <td>
-                      <button type="button" className="ghost-icon-button" onClick={() => onSelect(item.id)}>
-                        Düzenle
+                      <button
+                        type="button"
+                        className="ghost-icon-button"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          toggleRow(item.id)
+                        }}
+                      >
+                        {isSelected ? 'Kapat' : 'Düzenle'}
                       </button>
                     </td>
                   </tr>
                   {isSelected && (
                     <tr className="selected-details-row">
-                      <td colSpan={6}>
+                      <td colSpan={5}>
                         <div className="inline-editor-grid">
-                          <Field label="Tip">
+                          <Field label="Tip" required>
                             <select value={form.kind} onChange={(event) => setField('kind', event.target.value)}>
                               {kindOptions.map((option) => (
                                 <option key={option.value} value={option.value}>
@@ -345,39 +363,52 @@ export function CriteriaTable({
                               ))}
                             </select>
                           </Field>
-                          <Field label="Başlık">
+                          <Field label="Başlık" required>
                             <input
                               required
                               value={form.title}
                               onChange={(event) => setField('title', event.target.value)}
                             />
                           </Field>
-                          <Field label="Onaylanacak kişi">
+                          <Field label="Onaylayacak Kişi" required={form.kind === 'Approval' || form.kind === 'Inform'}>
                             <input
+                              required={form.kind === 'Approval' || form.kind === 'Inform'}
                               value={form.approver}
-                              onChange={(event) => setField('approver', event.target.value)}
+                              onChange={(event) =>
+                                onChange({
+                                  ...form,
+                                  approver: event.target.value,
+                                  informPerson: event.target.value,
+                                })
+                              }
                             />
                           </Field>
-                          <Field label="Bilgilendirme personeli">
+                          {false && <Field label="Bilgilendirme personeli">
                             <input
                               value={form.informPerson}
-                              onChange={(event) => setField('informPerson', event.target.value)}
+                              onChange={(event) =>
+                                onChange({
+                                  ...form,
+                                  approver: event.target.value,
+                                  informPerson: event.target.value,
+                                })
+                              }
                             />
-                          </Field>
+                          </Field>}
 
                           {(form.kind === 'Start' || form.kind === 'Inform') && (
-                            <Field label="Sonraki adım">
-                              {targetSelect(form.nextOnStart, (value) => setField('nextOnStart', value))}
+                            <Field label="Sonraki adım" required>
+                              {targetSelect(form.nextOnStart, (value) => setField('nextOnStart', value), true)}
                             </Field>
                           )}
 
                           {form.kind === 'Approval' && (
                             <>
-                              <Field label="Onay adımı">
-                                {targetSelect(form.nextOnApprove, (value) => setField('nextOnApprove', value))}
+                              <Field label="Onay adımı" required>
+                                {targetSelect(form.nextOnApprove, (value) => setField('nextOnApprove', value), true)}
                               </Field>
-                              <Field label="Red adımı">
-                                {targetSelect(form.nextOnReject, (value) => setField('nextOnReject', value))}
+                              <Field label="Red adımı" required>
+                                {targetSelect(form.nextOnReject, (value) => setField('nextOnReject', value), true)}
                               </Field>
                             </>
                           )}
@@ -405,11 +436,15 @@ export function CriteriaTable({
                               <div key={index} className="table-outcome-editor">
                                 <div className="table-outcome-row">
                                   <input
+                                    required
                                     value={outcome.label}
+                                    aria-label="Durum adı zorunlu"
                                     onChange={(event) => updateCompareOutcome(index, { label: event.target.value })}
                                   />
-                                  {targetSelect(outcome.targetId, (targetId) =>
-                                    updateCompareOutcome(index, { targetId }),
+                                  {targetSelect(
+                                    outcome.targetId,
+                                    (targetId) => updateCompareOutcome(index, { targetId }),
+                                    true,
                                   )}
                                   <button
                                     type="button"
@@ -444,6 +479,7 @@ export function CriteriaTable({
                                         ))}
                                       </select>
                                       <input
+                                        required
                                         type="number"
                                         step="0.01"
                                         value={condition.compareValue}
@@ -501,12 +537,72 @@ export function CriteriaTable({
   )
 }
 
-function Field({ label, children }) {
+function Field({ label, children, required = false }) {
   return (
     <label className="field">
-      <span>{label}</span>
+      <span>
+        {label}
+        {required && <span className="required-mark"> *</span>}
+      </span>
       {children}
     </label>
   )
+}
+
+function criteriaSummaryContent(item) {
+  if (item.kind === 'Compare') {
+    const outcomes = item.compareOutcomes || []
+    if (!outcomes.length) return '-'
+
+    return (
+      <ul className="summary-list">
+        {outcomes.map((outcome, index) => (
+          <li key={`${outcome.label || 'outcome'}-${index}`}>
+            <strong>{outcome.label || `Durum ${index + 1}`}:</strong>{' '}
+            {compareOutcomeRuleText(outcome)}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  return criteriaSummary(item)
+}
+
+function criteriaConnectionSummary(item, criteria) {
+  if (item.kind === 'Compare') {
+    const outcomes = item.compareOutcomes || []
+    if (!outcomes.length) return '-'
+
+    return (
+      <ul className="summary-list">
+        {outcomes.map((outcome, index) => (
+          <li key={`${outcome.label || 'target'}-${index}`}>
+            <strong>{outcome.label || `Durum ${index + 1}`}:</strong>{' '}
+            {targetTitle(criteria, outcome.targetId)}
+          </li>
+        ))}
+      </ul>
+    )
+  }
+
+  if (item.kind === 'Approval') {
+    return (
+      <ul className="summary-list">
+        <li>
+          <strong>Onay:</strong> {targetTitle(criteria, item.nextOnApprove)}
+        </li>
+        <li>
+          <strong>Red:</strong> {targetTitle(criteria, item.nextOnReject)}
+        </li>
+      </ul>
+    )
+  }
+
+  if (item.kind === 'Start' || item.kind === 'Inform') {
+    return targetTitle(criteria, item.nextOnStart)
+  }
+
+  return '-'
 }
 

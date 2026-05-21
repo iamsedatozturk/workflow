@@ -180,9 +180,13 @@ export function emptyCriteria(kind = 'Compare', workflowItemId = null) {
 }
 
 export function toCriteriaForm(item) {
+  const sharedPerson = item.approver || item.informPerson || ''
+
   return {
     ...emptyCriteria(item.kind),
     ...item,
+    approver: sharedPerson,
+    informPerson: sharedPerson,
     nextOnStart: item.nextOnStart || '',
     nextOnTrue: item.nextOnTrue || '',
     nextOnFalse: item.nextOnFalse || '',
@@ -196,10 +200,14 @@ export function toCriteriaForm(item) {
 }
 
 export function normalizeCriteria(item) {
+  const sharedPerson = item.approver || item.informPerson || ''
+
   return {
     ...item,
     workflowItemId: Number(item.workflowItemId || 0),
     compareValue: Number(item.compareValue || 0),
+    approver: sharedPerson,
+    informPerson: sharedPerson,
     positionX: Number(item.positionX || 32),
     positionY: Number(item.positionY || 150),
     compareOutcomes: (item.compareOutcomes || [])
@@ -286,8 +294,8 @@ export function criteriaSummary(item) {
       .map((outcome) => `${outcome.label}: ${compareOutcomeRuleText(outcome)}`)
       .join(' / ') || '-'
   }
-  if (item.kind === 'Approval') return item.approver || '-'
-  if (item.kind === 'Inform') return item.informPerson || '-'
+  if (item.kind === 'Approval') return item.approver || item.informPerson || '-'
+  if (item.kind === 'Inform') return item.approver || item.informPerson || '-'
   return item.title
 }
 

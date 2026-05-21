@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { DndContext } from '@dnd-kit/core'
-import { FiMaximize2, FiRefreshCw, FiZoomIn, FiZoomOut } from 'react-icons/fi'
+import { FiMaximize2, FiRefreshCw, FiX, FiZoomIn, FiZoomOut } from 'react-icons/fi'
 import classNames from 'classnames'
 import dayjs from 'dayjs'
 import 'dayjs/locale/tr'
@@ -25,11 +25,14 @@ function App() {
   const [selectedId, setSelectedId] = useState('')
   const [pendingLink, setPendingLink] = useState(null)
   const [workflowForm, setWorkflowForm] = useState({ sorumlu: '', amount: 7200 })
+  const [editingWorkflowId, setEditingWorkflowId] = useState(null)
+  const [workflowEditForm, setWorkflowEditForm] = useState({ sorumlu: '', tarih: '', amount: 0 })
   const [criteriaForm, setCriteriaForm] = useState(emptyCriteria())
   const [dragPreview, setDragPreview] = useState(null)
   const [canvasZoom, setCanvasZoom] = useState(1)
   const [designerTab, setDesignerTab] = useState('flow')
   const [busy, setBusy] = useState(false)
+  const [approvalDialogWorkflowId, setApprovalDialogWorkflowId] = useState(null)
   const canvasRef = useRef(null)
 
   const currentCriteria = useMemo(
@@ -48,16 +51,13 @@ function App() {
   )
 
   const pendingItems = useMemo(
-    () =>
-      workflowItems.filter((item) =>
-        criteria.some(
-          (candidate) =>
-            candidate.workflowItemId === item.id &&
-            candidate.id === item.currentNodeId &&
-            candidate.kind === 'Approval',
-        ),
-      ),
+    () => workflowItems.filter((item) => isPendingApproval(item, criteria)),
     [criteria, workflowItems],
+  )
+
+  const dialogPendingItems = useMemo(
+    () => pendingItems.filter((item) => item.id === approvalDialogWorkflowId),
+    [approvalDialogWorkflowId, pendingItems],
   )
 
   const loadState = useCallback(async () => {
@@ -65,6 +65,7 @@ function App() {
     setWorkflowItems(data.workflowItems)
     setCriteria(data.criteria)
     setSelectedWorkflowId((current) => current || data.workflowItems[0]?.id || null)
+    return data
   }, [])
 
   useEffect(() => {
@@ -114,11 +115,53 @@ function App() {
     })
   }
 
+  const beginWorkflowEdit = (item) => {
+    setSelectedWorkflowId(item.id)
+    setPendingLink(null)
+    setSelectedId('')
+    setEditingWorkflowId(item.id)
+    setWorkflowEditForm({
+      sorumlu: item.sorumlu,
+      tarih: dayjs(item.tarih).format('YYYY-MM-DD'),
+      amount: item.amount,
+    })
+  }
+
+  const cancelWorkflowEdit = () => {
+    setEditingWorkflowId(null)
+    setWorkflowEditForm({ sorumlu: '', tarih: '', amount: 0 })
+  }
+
+  const saveWorkflowEdit = (id) => {
+    runAction(async () => {
+      await workflowApi.updateWorkflow(id, {
+        sorumlu: workflowEditForm.sorumlu,
+        tarih: workflowEditForm.tarih,
+        amount: Number(workflowEditForm.amount),
+      })
+      cancelWorkflowEdit()
+    })
+  }
+
+  const startWorkflow = useCallback((id) => {
+    runAction(async () => {
+      await workflowApi.startWorkflow(id)
+      const data = await loadState()
+      const startedWorkflow = data.workflowItems.find((item) => item.id === id)
+
+      if (isPendingApproval(startedWorkflow, data.criteria)) {
+        setApprovalDialogWorkflowId(id)
+      } else {
+        setApprovalDialogWorkflowId(null)
+      }
+    })
+  }, [loadState, runAction])
+
   const saveCriteria = (event) => {
     event.preventDefault()
     runAction(async () => {
-      const saved = await workflowApi.saveCriteria(normalizeCriteria(criteriaForm))
-      setSelectedId(saved.id)
+      await workflowApi.saveCriteria(normalizeCriteria(criteriaForm))
+      setSelectedId('')
     })
   }
 
@@ -193,6 +236,15 @@ function App() {
     window.addEventListener('keydown', deleteWithKeyboard)
     return () => window.removeEventListener('keydown', deleteWithKeyboard)
   }, [deleteSelectedCriteria, disconnectLink, pendingLink])
+
+  useEffect(() => {
+    if (!approvalDialogWorkflowId) return
+
+    const stillPending = pendingItems.some((item) => item.id === approvalDialogWorkflowId)
+    if (!stillPending) {
+      setApprovalDialogWorkflowId(null)
+    }
+  }, [approvalDialogWorkflowId, pendingItems])
 
   const updateNodePosition = ({ active, delta }) => {
     const item = currentCriteria.find((candidate) => candidate.id === active.id)
@@ -298,20 +350,18 @@ function App() {
             busy={busy}
             onFormChange={setWorkflowForm}
             onSubmit={createWorkflow}
+            editingId={editingWorkflowId}
+            editForm={workflowEditForm}
+            onEditFormChange={setWorkflowEditForm}
+            onEdit={beginWorkflowEdit}
+            onCancelEdit={cancelWorkflowEdit}
+            onSaveEdit={saveWorkflowEdit}
             onSelect={(item) => {
               setSelectedWorkflowId(item.id)
               setPendingLink(null)
               setSelectedId('')
             }}
-            onStart={(id) => runAction(() => workflowApi.startWorkflow(id))}
-          />
-          <PendingApprovals
-            items={pendingItems}
-            criteria={criteria}
-            busy={busy}
-            onDecision={(id, approved, note) =>
-              runAction(() => workflowApi.decideWorkflow(id, { approved, note }))
-            }
+            onStart={startWorkflow}
           />
         </section>
 
@@ -397,7 +447,7 @@ function App() {
               className={classNames('tab-button', { active: designerTab === 'history' })}
               onClick={() => setDesignerTab('history')}
             >
-              Onay Açıklamaları
+              Akış Geçmişi
             </button>
           </div>
 
@@ -463,53 +513,68 @@ function App() {
           )}
         </section>
       </main>
+
+      {approvalDialogWorkflowId && dialogPendingItems.length > 0 && (
+        <div className="modal-backdrop" role="presentation">
+          <section
+            className="approval-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="approval-dialog-title"
+          >
+            <div className="section-title compact">
+              <div>
+                <h2 id="approval-dialog-title">Bekleyen Onaylar</h2>
+                <p>Workflow onay adiminda bekliyor.</p>
+              </div>
+              <button
+                type="button"
+                className="secondary-button icon-only"
+                title="Kapat"
+                onClick={() => setApprovalDialogWorkflowId(null)}
+              >
+                <FiX />
+              </button>
+            </div>
+            <PendingApprovals
+              items={dialogPendingItems}
+              criteria={criteria}
+              busy={busy}
+              showChrome={false}
+              onDecision={(id, approved, note) =>
+                runAction(() => workflowApi.decideWorkflow(id, { approved, note }))
+              }
+            />
+          </section>
+        </div>
+      )}
     </div>
+  )
+}
+
+function isPendingApproval(item, criteria) {
+  if (!item) return false
+
+  return criteria.some(
+    (candidate) =>
+      candidate.workflowItemId === item.id &&
+      candidate.id === item.currentNodeId &&
+      candidate.kind === 'Approval',
   )
 }
 
 function buildFitLayout(criteria) {
   const links = collectLinks(criteria)
-  const byId = new Map(criteria.map((item) => [item.id, item]))
-  const outgoing = new Map(criteria.map((item) => [item.id, []]))
-  const incomingCount = new Map(criteria.map((item) => [item.id, 0]))
-
-  links.forEach((link) => {
-    outgoing.get(link.source.id)?.push(link.target.id)
-    incomingCount.set(link.target.id, (incomingCount.get(link.target.id) || 0) + 1)
-  })
-
-  const roots = criteria
-    .filter((item) => item.kind === 'Start')
-    .concat(criteria.filter((item) => (incomingCount.get(item.id) || 0) === 0 && item.kind !== 'Start'))
-
-  const orderedRoots = roots.length ? roots : criteria
-  const levelById = new Map()
-  const queue = orderedRoots.map((item) => ({ id: item.id, level: 0 }))
-
-  while (queue.length) {
-    const current = queue.shift()
-    const previousLevel = levelById.get(current.id)
-    if (previousLevel !== undefined && previousLevel <= current.level) continue
-
-    levelById.set(current.id, current.level)
-    ;(outgoing.get(current.id) || []).forEach((targetId) => {
-      if (targetId && byId.has(targetId)) queue.push({ id: targetId, level: current.level + 1 })
-    })
-  }
-
-  criteria.forEach((item) => {
-    if (!levelById.has(item.id)) levelById.set(item.id, Math.max(0, levelById.size))
-  })
-
+  const rankById = buildTraversalRanks(criteria, links)
   const groups = new Map()
   criteria.forEach((item) => {
-    const level = levelById.get(item.id) || 0
-    if (!groups.has(level)) groups.set(level, [])
-    groups.get(level).push(item)
+    const column = fitColumn(item)
+    if (!groups.has(column)) groups.set(column, [])
+    groups.get(column).push(item)
   })
 
-  const sortedLevels = [...groups.keys()].sort((a, b) => a - b)
-  const yGap = 64
+  const sortedColumns = [...groups.keys()].sort((a, b) => a - b)
+  const yGap = 74
   const maxGroupHeight = Math.max(
     1,
     ...[...groups.values()].map((items) =>
@@ -518,18 +583,18 @@ function buildFitLayout(criteria) {
   )
   const top = 72
   const left = 72
-  const xGap = 190
+  const xGap = 128
   const positions = new Map()
 
-  sortedLevels.forEach((level, levelIndex) => {
-    const items = groups.get(level).sort(compareLayoutNodes)
+  sortedColumns.forEach((column, columnIndex) => {
+    const items = groups.get(column).sort((a, b) => compareLayoutNodes(a, b, rankById))
     const groupHeight =
       items.reduce((sum, item) => sum + getNodeHeight(item), 0) + Math.max(0, items.length - 1) * yGap
     let y = top + Math.max(0, (maxGroupHeight - groupHeight) / 2)
 
     items.forEach((item) => {
       positions.set(item.id, {
-        x: left + levelIndex * (nodeSize.width + xGap),
+        x: left + columnIndex * (nodeSize.width + xGap),
         y: Math.round(y),
       })
       y += getNodeHeight(item) + yGap
@@ -539,7 +604,7 @@ function buildFitLayout(criteria) {
   return positions
 }
 
-function compareLayoutNodes(a, b) {
+function fitColumn(item) {
   const priority = {
     Start: 0,
     Compare: 1,
@@ -548,7 +613,41 @@ function compareLayoutNodes(a, b) {
     End: 4,
   }
 
-  return (priority[a.kind] ?? 9) - (priority[b.kind] ?? 9) || a.title.localeCompare(b.title, 'tr')
+  return priority[item.kind] ?? 2
+}
+
+function compareLayoutNodes(a, b, rankById = new Map()) {
+  return (
+    (rankById.get(a.id) ?? 999) - (rankById.get(b.id) ?? 999) ||
+    a.title.localeCompare(b.title, 'tr')
+  )
+}
+
+function buildTraversalRanks(criteria, links) {
+  const rankById = new Map()
+  const outgoing = new Map(criteria.map((item) => [item.id, []]))
+  links.forEach((link) => {
+    outgoing.get(link.source.id)?.push(link.target.id)
+  })
+
+  const roots = criteria.filter((item) => item.kind === 'Start')
+  const queue = roots.length ? roots.map((item) => item.id) : criteria.map((item) => item.id)
+
+  while (queue.length) {
+    const id = queue.shift()
+    if (rankById.has(id)) continue
+
+    rankById.set(id, rankById.size)
+    ;(outgoing.get(id) || []).forEach((targetId) => {
+      if (targetId && !rankById.has(targetId)) queue.push(targetId)
+    })
+  }
+
+  criteria.forEach((item) => {
+    if (!rankById.has(item.id)) rankById.set(item.id, rankById.size)
+  })
+
+  return rankById
 }
 
 class AppErrorBoundary extends React.Component {

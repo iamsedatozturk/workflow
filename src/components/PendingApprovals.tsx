@@ -2,15 +2,17 @@ import React, { useState } from 'react'
 import { FiCheck, FiSlash } from 'react-icons/fi'
 import { formatMoney } from '../utils/workflowHelpers'
 
-export function PendingApprovals({ items, criteria, busy, onDecision }) {
+export function PendingApprovals({ items, criteria, busy, onDecision, showChrome = true }) {
   const [notes, setNotes] = useState({})
 
-  return (
-    <section className="surface">
-      <div className="section-title compact">
-        <h2>Bekleyen Onaylar</h2>
-        <span>{items.length} bekleyen</span>
-      </div>
+  const content = (
+    <>
+      {showChrome && (
+        <div className="section-title compact">
+          <h2>Bekleyen Onaylar</h2>
+          <span>{items.length} bekleyen</span>
+        </div>
+      )}
       <div className="approval-list">
         {items.length === 0 && <p className="empty-text">Bekleyen onay yok.</p>}
         {items.map((item) => {
@@ -70,6 +72,14 @@ export function PendingApprovals({ items, criteria, busy, onDecision }) {
           )
         })}
       </div>
+    </>
+  )
+
+  if (!showChrome) return content
+
+  return (
+    <section className="surface">
+      {content}
     </section>
   )
 }

@@ -180,6 +180,7 @@ export function FlowCanvas({
 function FlowNode({ item, criteria, links, selected, active, pendingLink, onSelect, onOpenDetails, onDelete, onBeginLink }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: item.id,
+    disabled: Boolean(pendingLink),
   })
   const Icon = kindIcon[item.kind]
   const style = {
@@ -521,9 +522,9 @@ function getPortOffsetAlong(length, index, count) {
 }
 
 function buildSideAwareRoute(start, startSide, end, endSide, slots = {}) {
-  const routeOffset = slotOffset(slots.routeIndex, slots.routeCount, 32)
-  const exit = extendFromSide(start, startSide, 18)
-  const entry = extendFromSide(end, endSide, 30)
+  const routeOffset = slotOffset(slots.routeIndex, slots.routeCount, 46)
+  const exit = extendFromSide(start, startSide, 26)
+  const entry = extendFromSide(end, endSide, 38)
   const startHorizontal = isHorizontalSide(startSide)
   const endHorizontal = isHorizontalSide(endSide)
   const points = [start, exit]
@@ -613,7 +614,7 @@ function slotOffset(index = 0, count = 1, gap = 18) {
 }
 
 function targetLaneDistance(index = 0, count = 1) {
-  return 30 + Math.max(0, Math.min(index, count - 1)) * 24
+  return 40 + Math.max(0, Math.min(index, count - 1)) * 32
 }
 
 function extendFromSide(point, side, distance) {

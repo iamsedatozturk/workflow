@@ -13,6 +13,10 @@ export const workflowApi = {
     const { data } = await client.post('/workflows', payload)
     return data
   },
+  updateWorkflow: async (id, payload) => {
+    const { data } = await client.put(`/workflows/${id}`, payload)
+    return data
+  },
   startWorkflow: async (id) => {
     const { data } = await client.post(`/workflows/${id}/start`)
     return data

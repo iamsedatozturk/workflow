@@ -1,15 +1,18 @@
-import React from 'react'
-import dayjs from 'dayjs'
+import React from "react";
+import dayjs from "dayjs";
+import { AnyAaaaRecord } from "dns";
 
-export function ApprovalHistoryTable({ selectedWorkflow }) {
-  const history = selectedWorkflow?.history || []
+export function ApprovalHistoryTable({ selectedWorkflow }: any) {
+  const history = selectedWorkflow?.history || [];
 
   return (
     <section className="surface approval-history-panel">
       <div className="section-title compact">
         <h2>
-          Onay Açıklamaları
-          {selectedWorkflow ? ` - #${selectedWorkflow.id} ${selectedWorkflow.sorumlu}` : ''}
+          Akış Geçmişi
+          {selectedWorkflow
+            ? ` - #${selectedWorkflow.id} ${selectedWorkflow.sorumlu}`
+            : ""}
         </h2>
         <span>{history.length} kayıt</span>
       </div>
@@ -28,9 +31,9 @@ export function ApprovalHistoryTable({ selectedWorkflow }) {
                 <td colSpan={3}>Seçili iş akışı için açıklama kaydı yok.</td>
               </tr>
             )}
-            {history.map((item, index) => (
+            {history.map((item: any, index: number) => (
               <tr key={`${item.time}-${index}`}>
-                <td>{dayjs(item.time).format('DD MMM YYYY HH:mm')}</td>
+                <td>{dayjs(item.time).format("DD MMM YYYY HH:mm")}</td>
                 <td>{item.action}</td>
                 <td>{item.note}</td>
               </tr>
@@ -39,6 +42,5 @@ export function ApprovalHistoryTable({ selectedWorkflow }) {
         </table>
       </div>
     </section>
-  )
+  );
 }
-

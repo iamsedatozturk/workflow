@@ -34,6 +34,21 @@ app.MapPost("/api/workflows", async (WorkflowStore store, CreateWorkflowRequest 
     return Results.Created($"/api/workflows/{item.Id}", item);
 });
 
+app.MapPut("/api/workflows/{id:int}", async (WorkflowStore store, int id, UpdateWorkflowRequest request) =>
+{
+    var state = await store.LoadAsync();
+    var item = state.WorkflowItems.FirstOrDefault(w => w.Id == id);
+    if (item is null) return Results.NotFound();
+
+    item.Sorumlu = request.Sorumlu.Trim();
+    item.Tarih = request.Tarih;
+    item.Amount = request.Amount;
+    item.History.Add(new WorkflowHistory("Güncellendi", "Workflow tablo bilgileri güncellendi."));
+
+    await store.SaveAsync(state);
+    return Results.Ok(item);
+});
+
 app.MapPost("/api/workflows/{id:int}/start", async (WorkflowStore store, int id) =>
 {
     var state = await store.LoadAsync();
@@ -61,6 +76,9 @@ app.MapPost("/api/workflows/{id:int}/decision", async (WorkflowStore store, int 
 
 app.MapPost("/api/criteria", async (WorkflowStore store, UpsertCriteriaRequest request) =>
 {
+    var validationErrors = CriteriaValidation.Validate(request);
+    if (validationErrors.Count > 0) return Results.BadRequest(new { errors = validationErrors });
+
     var state = await store.LoadAsync();
     var existing = state.Criteria.FirstOrDefault(c => c.Id == request.Id);
     var record = existing ?? new CriteriaRecord
@@ -74,8 +92,9 @@ app.MapPost("/api/criteria", async (WorkflowStore store, UpsertCriteriaRequest r
     record.Column = request.Column.Trim();
     record.Operator = request.Operator.Trim();
     record.CompareValue = request.CompareValue;
-    record.Approver = request.Approver.Trim();
-    record.InformPerson = request.InformPerson.Trim();
+    var sharedPerson = !string.IsNullOrWhiteSpace(request.Approver) ? request.Approver.Trim() : request.InformPerson.Trim();
+    record.Approver = sharedPerson;
+    record.InformPerson = sharedPerson;
     record.NextOnStart = request.NextOnStart;
     record.NextOnTrue = request.NextOnTrue;
     record.NextOnFalse = request.NextOnFalse;
@@ -186,7 +205,6 @@ public static class WorkflowEngine
                     if (action == "start" && current.Kind == CriteriaKind.Start)
                     {
                         item.History.Add(new WorkflowHistory("Karşılaştırma", $"{next.Title} adımına geçildi."));
-                        return;
                     }
 
                     var passed = Evaluate(item, next);
@@ -200,8 +218,9 @@ public static class WorkflowEngine
                     return;
                 case CriteriaKind.Inform:
                     item.Durum = next.Title;
-                    item.InformedPerson = next.InformPerson;
-                    item.History.Add(new WorkflowHistory("Bilgilendirme", $"{next.InformPerson} bilgilendirildi."));
+                    var informedPerson = !string.IsNullOrWhiteSpace(next.Approver) ? next.Approver : next.InformPerson;
+                    item.InformedPerson = informedPerson;
+                    item.History.Add(new WorkflowHistory("Bilgilendirme", $"{informedPerson} bilgilendirildi."));
                     nextId = next.NextOnStart;
                     break;
                 case CriteriaKind.End:
@@ -302,7 +321,7 @@ public sealed class WorkflowState
             new WorkflowItem
             {
                 Id = 1,
-                Sorumlu = "Sedat Öztürk",
+                Sorumlu = "Üretim Süreci",
                 Tarih = DateOnly.FromDateTime(DateTime.Today),
                 Durum = "İş Akışı Başlat",
                 Amount = 7200,
@@ -312,7 +331,7 @@ public sealed class WorkflowState
             new WorkflowItem
             {
                 Id = 2,
-                Sorumlu = "Aylin Kara",
+                Sorumlu = "Satınalma Süreci",
                 Tarih = DateOnly.FromDateTime(DateTime.Today.AddDays(-1)),
                 Durum = "İş Akışı Başlat",
                 Amount = 18400,
@@ -434,6 +453,78 @@ public sealed record WorkflowHistory(string Action, string Note)
     public DateTime Time { get; init; } = DateTime.Now;
 }
 
+public static class CriteriaValidation
+{
+    public static List<string> Validate(UpsertCriteriaRequest request)
+    {
+        var errors = new List<string>();
+        var sharedPerson = FirstText(request.Approver, request.InformPerson);
+
+        Require(errors, request.Title, "Başlık zorunludur.");
+
+        switch (request.Kind)
+        {
+            case CriteriaKind.Start:
+                Require(errors, request.NextOnStart, "Başlat adımı için Sonraki adım zorunludur.");
+                break;
+            case CriteriaKind.Compare:
+                ValidateCompareOutcomes(errors, request);
+                break;
+            case CriteriaKind.Approval:
+                Require(errors, sharedPerson, "Onaylanacak kişi adımı için Onaylayacak Kişi zorunludur.");
+                Require(errors, request.NextOnApprove, "Onaylanacak kişi adımı için Onay adımı zorunludur.");
+                Require(errors, request.NextOnReject, "Onaylanacak kişi adımı için Red adımı zorunludur.");
+                break;
+            case CriteriaKind.Inform:
+                Require(errors, sharedPerson, "Bilgilendirme adımı için Onaylayacak Kişi zorunludur.");
+                Require(errors, request.NextOnStart, "Bilgilendirme adımı için Sonraki adım zorunludur.");
+                break;
+            case CriteriaKind.End:
+                break;
+        }
+
+        return errors;
+    }
+
+    private static void ValidateCompareOutcomes(List<string> errors, UpsertCriteriaRequest request)
+    {
+        var outcomes = request.CompareOutcomes ?? [];
+        if (outcomes.Count == 0)
+        {
+            errors.Add("Karşılaştırma adımı için en az bir durum zorunludur.");
+            return;
+        }
+
+        for (var index = 0; index < outcomes.Count; index++)
+        {
+            var outcome = outcomes[index];
+            var label = string.IsNullOrWhiteSpace(outcome.Label) ? $"Durum {index + 1}" : outcome.Label;
+
+            Require(errors, outcome.Label, $"{label} için durum adı zorunludur.");
+            Require(errors, outcome.TargetId, $"{label} için hedef adım zorunludur.");
+
+            if (outcome.Conditions.Count == 0)
+            {
+                errors.Add($"{label} için en az bir koşul zorunludur.");
+            }
+
+            foreach (var condition in outcome.Conditions)
+            {
+                Require(errors, condition.Column, $"{label} için koşul sütunu zorunludur.");
+                Require(errors, condition.Operator, $"{label} için koşul operatörü zorunludur.");
+            }
+        }
+    }
+
+    private static string FirstText(params string?[] values) =>
+        values.Select(value => value?.Trim()).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
+
+    private static void Require(List<string> errors, string? value, string message)
+    {
+        if (string.IsNullOrWhiteSpace(value)) errors.Add(message);
+    }
+}
+
 public sealed class CriteriaRecord
 {
     public int WorkflowItemId { get; set; }
@@ -490,6 +581,7 @@ public enum CriteriaKind
 }
 
 public sealed record CreateWorkflowRequest(string Sorumlu, decimal Amount);
+public sealed record UpdateWorkflowRequest(string Sorumlu, DateOnly Tarih, decimal Amount);
 public sealed record DecisionRequest(bool Approved, string Note);
 public sealed record UpsertCriteriaRequest(
     string? Id,
