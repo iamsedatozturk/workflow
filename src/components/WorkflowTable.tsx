@@ -1,8 +1,22 @@
-import React from 'react'
-import { FiCheck, FiEdit2, FiPlay, FiPlus, FiX } from 'react-icons/fi'
-import classNames from 'classnames'
-import dayjs from 'dayjs'
-import { formatMoney, statusClass } from '../utils/workflowHelpers'
+import React from "react";
+import {
+  FiCheck,
+  FiEdit2,
+  FiPlay,
+  FiPlus,
+  FiRefreshCw,
+  FiX,
+} from "react-icons/fi";
+import classNames from "classnames";
+import dayjs from "dayjs";
+import { formatMoney, statusClass } from "../utils/workflowHelpers";
+
+const CheckIcon = FiCheck as any;
+const EditIcon = FiEdit2 as any;
+const PlayIcon = FiPlay as any;
+const PlusIcon = FiPlus as any;
+const RefreshIcon = FiRefreshCw as any;
+const CloseIcon = FiX as any;
 
 export function WorkflowTable({
   items,
@@ -20,12 +34,25 @@ export function WorkflowTable({
   onSaveEdit,
   onSelect,
   onStart,
+  onResetDemo,
 }: any) {
   return (
     <section className="surface">
-      <div className="section-title compact">
-        <h2>WorkflowItems Tablosu</h2>
-        <span>{items.length} kayıt</span>
+      <div className="section-title compact workflow-title-row">
+        <div>
+          <h2>WorkflowItems Tablosu</h2>
+          <span>{items.length} kayıt</span>
+        </div>
+        <button
+          type="button"
+          className="reset-demo-button"
+          disabled={busy}
+          onClick={onResetDemo}
+          title="Demo verisini yenile"
+        >
+          <RefreshIcon className={busy ? "spin-icon" : undefined} />
+          <span>Demo Verisini Yenile</span>
+        </button>
       </div>
 
       <form className="create-row" onSubmit={onSubmit}>
@@ -54,7 +81,7 @@ export function WorkflowTable({
           />
         </label>
         <button type="submit" disabled={busy}>
-          <FiPlus />
+          <PlusIcon />
           Yeni Akışı Ekle
         </button>
       </form>
@@ -77,17 +104,21 @@ export function WorkflowTable({
                 (candidate: any) =>
                   candidate.workflowItemId === item.id &&
                   candidate.id === item.currentNodeId,
-              )
-              const statusTitle = currentStep?.title || item.durum
-              const canStart = currentStep?.kind === 'Start' || currentStep?.kind === 'Compare'
-              const isEditing = item.id === editingId
+              );
+              const statusTitle = currentStep?.title || item.durum;
+              const canStart =
+                currentStep?.kind === "Start" ||
+                currentStep?.kind === "Compare";
+              const isEditing = item.id === editingId;
 
               return (
                 <tr
                   key={item.id}
-                  className={classNames({ 'selected-row': item.id === selectedWorkflowId })}
+                  className={classNames({
+                    "selected-row": item.id === selectedWorkflowId,
+                  })}
                   onClick={() => {
-                    if (!isEditing) onSelect(item)
+                    if (!isEditing) onSelect(item);
                   }}
                 >
                   <td>{item.id}</td>
@@ -98,7 +129,10 @@ export function WorkflowTable({
                         value={editForm.sorumlu}
                         onClick={(event) => event.stopPropagation()}
                         onChange={(event) =>
-                          onEditFormChange({ ...editForm, sorumlu: event.target.value })
+                          onEditFormChange({
+                            ...editForm,
+                            sorumlu: event.target.value,
+                          })
                         }
                       />
                     ) : (
@@ -113,11 +147,14 @@ export function WorkflowTable({
                         value={editForm.tarih}
                         onClick={(event) => event.stopPropagation()}
                         onChange={(event) =>
-                          onEditFormChange({ ...editForm, tarih: event.target.value })
+                          onEditFormChange({
+                            ...editForm,
+                            tarih: event.target.value,
+                          })
                         }
                       />
                     ) : (
-                      dayjs(item.tarih).format('DD MMM YYYY')
+                      dayjs(item.tarih).format("DD MMM YYYY")
                     )}
                   </td>
                   <td>
@@ -130,7 +167,10 @@ export function WorkflowTable({
                         value={editForm.amount}
                         onClick={(event) => event.stopPropagation()}
                         onChange={(event) =>
-                          onEditFormChange({ ...editForm, amount: event.target.value })
+                          onEditFormChange({
+                            ...editForm,
+                            amount: event.target.value,
+                          })
                         }
                       />
                     ) : (
@@ -147,13 +187,17 @@ export function WorkflowTable({
                           <button
                             type="button"
                             className="approve-button"
-                            disabled={busy || !editForm.sorumlu?.trim() || !editForm.tarih}
+                            disabled={
+                              busy ||
+                              !editForm.sorumlu?.trim() ||
+                              !editForm.tarih
+                            }
                             onClick={(event) => {
-                              event.stopPropagation()
-                              onSaveEdit(item.id)
+                              event.stopPropagation();
+                              onSaveEdit(item.id);
                             }}
                           >
-                            <FiCheck />
+                            <CheckIcon />
                             Kaydet
                           </button>
                           <button
@@ -161,11 +205,11 @@ export function WorkflowTable({
                             className="secondary-button"
                             disabled={busy}
                             onClick={(event) => {
-                              event.stopPropagation()
-                              onCancelEdit()
+                              event.stopPropagation();
+                              onCancelEdit();
                             }}
                           >
-                            <FiX />
+                            <CloseIcon />
                             İptal
                           </button>
                         </>
@@ -176,11 +220,11 @@ export function WorkflowTable({
                             className="secondary-button"
                             disabled={busy}
                             onClick={(event) => {
-                              event.stopPropagation()
-                              onEdit(item)
+                              event.stopPropagation();
+                              onEdit(item);
                             }}
                           >
-                            <FiEdit2 />
+                            <EditIcon />
                             Edit
                           </button>
                           <button
@@ -188,11 +232,11 @@ export function WorkflowTable({
                             className="secondary-button"
                             disabled={busy || !canStart}
                             onClick={(event) => {
-                              event.stopPropagation()
-                              onStart(item.id)
+                              event.stopPropagation();
+                              onStart(item.id);
                             }}
                           >
-                            <FiPlay />
+                            <PlayIcon />
                             Başlat
                           </button>
                         </>
@@ -200,15 +244,19 @@ export function WorkflowTable({
                     </div>
                   </td>
                 </tr>
-              )
+              );
             })}
           </tbody>
         </table>
       </div>
     </section>
-  )
+  );
 }
 
 function StatusPill({ status }: any) {
-  return <span className={classNames('status-pill', statusClass(status))}>{status}</span>
+  return (
+    <span className={classNames("status-pill", statusClass(status))}>
+      {status}
+    </span>
+  );
 }

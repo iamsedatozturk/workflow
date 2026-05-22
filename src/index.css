@@ -113,9 +113,39 @@
     @apply text-sm text-app-muted;
   }
 
+  .workflow-title-row {
+    @apply items-start;
+  }
+
+  .workflow-title-row > div {
+    @apply grid gap-1;
+  }
+
   .ghost-button,
   .secondary-button {
     @apply border-app-primary bg-white text-app-primary;
+  }
+
+  .reset-demo-button {
+    @apply min-h-10 rounded-md border-[#c7d7f4] bg-[#f8fbff] px-3.5 text-sm font-bold text-app-primary shadow-[0_1px_2px_rgba(16,24,40,0.06)];
+    transition:
+      background-color 160ms ease,
+      border-color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms ease;
+  }
+
+  .reset-demo-button:hover:not(:disabled) {
+    @apply border-app-primary bg-white shadow-[0_8px_18px_rgba(37,99,235,0.14)];
+    transform: translateY(-1px);
+  }
+
+  .reset-demo-button:focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-app-primary/35;
+  }
+
+  .spin-icon {
+    animation: refresh-spin 900ms linear infinite;
   }
 
   .ghost-icon-button {
@@ -136,7 +166,7 @@
   }
 
   .field {
-    @apply grid gap-1.5 text-[13px] text-[#344054];
+    @apply grid gap-1.5 text-[12px] text-[#344054];
   }
 
   .required-mark {
@@ -352,7 +382,8 @@
 @layer utilities {
   .flow-canvas {
     @apply relative max-h-[68vh] min-h-[620px] overflow-auto rounded-lg border border-app-line;
-    background-image: linear-gradient(#edf1f6 1px, transparent 1px),
+    background-image:
+      linear-gradient(#edf1f6 1px, transparent 1px),
       linear-gradient(90deg, #edf1f6 1px, transparent 1px);
     background-size: 24px 24px;
   }
@@ -564,6 +595,12 @@
   }
 }
 
+@keyframes refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 1080px) {
   .designer-grid {
     @apply grid-cols-1;
@@ -587,6 +624,10 @@
 
   .header-actions {
     @apply justify-items-start;
+  }
+
+  .workflow-title-row {
+    @apply items-stretch;
   }
 
   .three-fields,

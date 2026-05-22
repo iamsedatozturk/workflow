@@ -458,29 +458,12 @@ public static class CriteriaValidation
     public static List<string> Validate(UpsertCriteriaRequest request)
     {
         var errors = new List<string>();
-        var sharedPerson = FirstText(request.Approver, request.InformPerson);
 
         Require(errors, request.Title, "Başlık zorunludur.");
 
-        switch (request.Kind)
+        if (request.Kind == CriteriaKind.Compare)
         {
-            case CriteriaKind.Start:
-                Require(errors, request.NextOnStart, "Başlat adımı için Sonraki adım zorunludur.");
-                break;
-            case CriteriaKind.Compare:
-                ValidateCompareOutcomes(errors, request);
-                break;
-            case CriteriaKind.Approval:
-                Require(errors, sharedPerson, "Onaylanacak kişi adımı için Onaylayacak Kişi zorunludur.");
-                Require(errors, request.NextOnApprove, "Onaylanacak kişi adımı için Onay adımı zorunludur.");
-                Require(errors, request.NextOnReject, "Onaylanacak kişi adımı için Red adımı zorunludur.");
-                break;
-            case CriteriaKind.Inform:
-                Require(errors, sharedPerson, "Bilgilendirme adımı için Onaylayacak Kişi zorunludur.");
-                Require(errors, request.NextOnStart, "Bilgilendirme adımı için Sonraki adım zorunludur.");
-                break;
-            case CriteriaKind.End:
-                break;
+            ValidateCompareOutcomes(errors, request);
         }
 
         return errors;
@@ -501,7 +484,6 @@ public static class CriteriaValidation
             var label = string.IsNullOrWhiteSpace(outcome.Label) ? $"Durum {index + 1}" : outcome.Label;
 
             Require(errors, outcome.Label, $"{label} için durum adı zorunludur.");
-            Require(errors, outcome.TargetId, $"{label} için hedef adım zorunludur.");
 
             if (outcome.Conditions.Count == 0)
             {
@@ -515,9 +497,6 @@ public static class CriteriaValidation
             }
         }
     }
-
-    private static string FirstText(params string?[] values) =>
-        values.Select(value => value?.Trim()).FirstOrDefault(value => !string.IsNullOrWhiteSpace(value)) ?? "";
 
     private static void Require(List<string> errors, string? value, string message)
     {
