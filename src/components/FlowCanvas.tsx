@@ -69,27 +69,32 @@ export function FlowCanvas({
   };
 
   const handleCanvasClick = (event) => {
-    if (event.target.closest(".flow-node, .flow-link")) return;
+    if (event.target.closest("[data-flow-node], [data-flow-link]")) return;
     onClearSelection();
   };
 
   return (
     <div
       ref={canvasRef}
-      className="flow-canvas"
+      className="relative max-h-[68vh] min-h-[620px] overflow-auto rounded-lg border border-app-line"
+      style={{
+        backgroundImage:
+          "linear-gradient(#edf1f6 1px, transparent 1px), linear-gradient(90deg, #edf1f6 1px, transparent 1px)",
+        backgroundSize: "24px 24px",
+      }}
       tabIndex={0}
       onClick={handleCanvasClick}
       onKeyDown={handleKeyDown}
     >
       {pendingLink && (
-        <div className="linking-banner">
+        <div className="sticky left-2.5 top-2.5 z-50 m-2.5 inline-flex min-h-[34px] items-center rounded-md border border-[#8bb3f1] bg-[#eff6ff] px-3 text-[13px] text-app-primaryDark shadow-lg">
           {outcomeLabel(pendingLink.outcome)} çıkışı seçildi. Hedef iş akışı
           adımına tıklayın.
         </div>
       )}
       {currentCriteria.length === 0 && (
-        <div className="empty-canvas">
-          <strong>Boş canvas</strong>
+        <div className="sticky left-[18px] top-[18px] z-30 inline-grid max-w-[360px] gap-1 rounded-lg border border-[#cfd6e2] bg-white/95 p-3.5 text-[#475467] shadow-lg">
+          <strong className="text-app-text">Boş canvas</strong>
           <span>
             Üstteki butonlardan adım ekleyin, sonra çıkış etiketleriyle
             bağlantıları kurun.
@@ -97,11 +102,11 @@ export function FlowCanvas({
         </div>
       )}
       <div
-        className="flow-stage-viewport"
+        className="relative min-h-[620px] min-w-full"
         style={{ width: canvasWidth * zoom, height: canvasHeight * zoom }}
       >
         <div
-          className="flow-stage"
+          className="relative min-h-[620px] min-w-full origin-top-left"
           style={{
             width: canvasWidth,
             height: canvasHeight,
@@ -109,7 +114,7 @@ export function FlowCanvas({
           }}
         >
           <svg
-            className="flow-arrows"
+            className="pointer-events-none absolute inset-0 z-20 overflow-visible"
             width={canvasWidth}
             height={canvasHeight}
             aria-hidden="true"
@@ -208,7 +213,7 @@ export function FlowCanvas({
             />
           ))}
           <svg
-            className="flow-labels"
+            className="pointer-events-none absolute inset-0 z-[70] overflow-visible"
             width={canvasWidth}
             height={canvasHeight}
             aria-hidden="true"
@@ -255,7 +260,20 @@ function FlowNode({
     <button
       ref={setNodeRef}
       type="button"
-      className={classNames("flow-node", item.kind, { selected, active })}
+      className={classNames(
+        "absolute z-40 grid h-32 w-44 touch-none content-start justify-items-start gap-1 rounded-lg border-2 border-[#667085] bg-white p-2.5 text-left text-app-text shadow-node",
+        {
+          "border-app-primary outline outline-[3px] outline-app-primary/20":
+            selected,
+          "border-green-600 bg-green-50 shadow-[0_0_0_4px_rgba(22,163,74,0.18),0_10px_24px_rgba(22,101,52,0.14)]":
+            active,
+          "h-[158px] border-app-amber": item.kind === "Compare",
+          "border-app-violet": item.kind === "Approval",
+          "border-app-green": item.kind === "Inform",
+          "border-app-red": item.kind === "End",
+        },
+      )}
+      data-flow-node
       style={style}
       {...listeners}
       {...attributes}
@@ -279,23 +297,35 @@ function FlowNode({
         onDelete();
       }}
     >
-      <span className="node-type">
+      <span
+        className={classNames("inline-flex items-center gap-1.5 text-xs", {
+          "text-green-800": active,
+          "text-app-muted": !active,
+        })}
+      >
         <Icon />
         {kindOptions.find((option) => option.value === item.kind)?.label}
       </span>
-      <strong>{item.title}</strong>
-      <small>{item.id}</small>
-      <div className="node-handles">
+      <strong className="break-words text-sm leading-tight [overflow-wrap:anywhere]">
+        {item.title}
+      </strong>
+      <small className={active ? "text-green-800" : "text-app-muted"}>
+        {item.id}
+      </small>
+      <div className="mt-0.5 flex max-w-full flex-wrap gap-[3px]">
         {getNodeOutcomes(item).map((outcome) => (
           <span
             key={outcome.field}
             role="button"
             tabIndex={0}
-            className={classNames("node-handle", {
-              active:
+            className={classNames(
+              "inline-flex min-h-[19px] max-w-full cursor-crosshair items-center overflow-hidden rounded-full border border-[#cfd6e2] bg-white px-1.5 py-px text-[10px] leading-tight text-[#344054] [text-overflow:ellipsis] [white-space:nowrap]",
+              {
+                "border-app-primary bg-[#eaf2ff] text-app-primary":
                 pendingLink?.sourceId === item.id &&
                 pendingLink?.outcome === outcome.field,
-            })}
+              },
+            )}
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.preventDefault();
@@ -332,11 +362,15 @@ function FlowNode({
         return (
           <span
             key={`${outcome.field}-port`}
-            className={classNames("node-port", "outgoing", side, {
-              active:
+            className={classNames(
+              "absolute z-10 h-1 w-1 rounded-full border border-[#475467] bg-white shadow-[0_0_0_1.5px_rgba(255,255,255,0.95)]",
+              portSideClass(side),
+              {
+                "border-app-primary bg-blue-100":
                 pendingLink?.sourceId === item.id &&
                 pendingLink?.outcome === outcome.field,
-            })}
+              },
+            )}
             style={getPortStyle(item, side, sideIndex, sideCount)}
           />
         );
@@ -348,7 +382,10 @@ function FlowNode({
           return (
             <span
               key={`${link.key}-incoming-port`}
-              className={classNames("node-port", "incoming", side)}
+              className={classNames(
+                "absolute h-1 w-1 rounded-full border border-app-muted bg-slate-50 shadow-[0_0_0_1.5px_rgba(255,255,255,0.95)]",
+                portSideClass(side),
+              )}
               style={getPortStyle(
                 item,
                 side,
@@ -384,7 +421,11 @@ function Arrow({ link, criteria, pendingLink, onBeginLink }) {
 
   return (
     <g
-      className={classNames("flow-link", tone, { active: isActive })}
+      className={classNames(
+        "group cursor-pointer outline-none",
+        linkToneClass(tone),
+      )}
+      data-flow-link
       role="button"
       tabIndex={0}
       onClick={selectLink}
@@ -393,10 +434,24 @@ function Arrow({ link, criteria, pendingLink, onBeginLink }) {
         selectLink(event);
       }}
     >
-      <path className="flow-link-hit" d={d} fill="none" />
-      <path className="flow-link-halo" d={d} fill="none" />
       <path
-        className="flow-link-line"
+        className="[pointer-events:stroke] [stroke-linecap:butt] [stroke-linejoin:round] [stroke-width:16] stroke-transparent"
+        d={d}
+        fill="none"
+      />
+      <path
+        className={classNames(
+          "pointer-events-none stroke-white/95 [stroke-linecap:butt] [stroke-linejoin:round] [stroke-width:7] group-hover:stroke-[var(--link-soft)] group-hover:[stroke-width:10] group-focus-visible:stroke-[var(--link-soft)] group-focus-visible:[stroke-width:10]",
+          { "stroke-[var(--link-soft)] [stroke-width:10]": isActive },
+        )}
+        d={d}
+        fill="none"
+      />
+      <path
+        className={classNames(
+          "pointer-events-none stroke-[var(--link-color)] [stroke-linecap:butt] [stroke-linejoin:round] [stroke-width:2] group-focus-visible:[stroke-width:3.2]",
+          { "[stroke-width:3.2]": isActive },
+        )}
         d={d}
         fill="none"
         markerEnd={`url(#arrow-${tone})`}
@@ -423,12 +478,14 @@ function ArrowLabel({ link, criteria, pendingLink }) {
 
   return (
     <g
-      className={classNames("flow-link-label-wrap", "flow-link", tone, {
-        active: isActive,
+      className={classNames(linkToneClass(tone), {
+        "[&_text]:text-[11px] [&_text]:font-bold [&_rect]:fill-white [&_rect]:[stroke-width:1.5]":
+          isActive,
       })}
+      data-flow-link
     >
       <rect
-        className="flow-link-label-bg"
+        className="fill-white/90 stroke-[var(--link-soft)] [stroke-width:1]"
         x={labelPoint.x - labelWidth / 2}
         y={labelPoint.y - 12}
         width={labelWidth}
@@ -436,7 +493,7 @@ function ArrowLabel({ link, criteria, pendingLink }) {
         rx="9"
       />
       <text
-        className="flow-link-label"
+        className="pointer-events-none fill-[var(--link-color)] text-[10px] font-medium"
         x={labelPoint.x}
         y={labelPoint.y}
         textAnchor="middle"
@@ -456,6 +513,27 @@ function linkTone(link) {
     return "compare";
   if (field === "nextOnStart") return "next";
   return "neutral";
+}
+
+function linkToneClass(tone) {
+  if (tone === "next") {
+    return "[--link-color:#2563eb] [--link-soft:rgba(37,99,235,0.14)]";
+  }
+  if (tone === "approve") {
+    return "[--link-color:#16a34a] [--link-soft:rgba(22,163,74,0.14)]";
+  }
+  if (tone === "reject") {
+    return "[--link-color:#dc2626] [--link-soft:rgba(220,38,38,0.14)]";
+  }
+  if (tone === "compare") {
+    return "[--link-color:#b45309] [--link-soft:rgba(180,83,9,0.15)]";
+  }
+  return "[--link-color:#475467] [--link-soft:rgba(71,84,103,0.14)]";
+}
+
+function portSideClass(side) {
+  if (side === "left" || side === "right") return "-translate-y-1/2";
+  return "-translate-x-1/2";
 }
 
 function buildArrowRoute(source, target, sourcePort = null, criteria = []) {

@@ -37,25 +37,28 @@ export function WorkflowTable({
   onResetDemo,
 }: any) {
   return (
-    <section className="surface">
-      <div className="section-title compact workflow-title-row">
-        <div>
-          <h2>WorkflowItems Tablosu</h2>
-          <span>{items.length} kayıt</span>
+    <section className="min-w-0 rounded-lg border border-app-line bg-app-surface p-4">
+      <div className="mb-3 flex items-start justify-between gap-4 max-[720px]:flex-col max-[720px]:items-stretch">
+        <div className="grid gap-1">
+          <h2 className="m-0 text-lg tracking-normal">WorkflowItems Tablosu</h2>
+          <span className="text-sm text-app-muted">{items.length} kayıt</span>
         </div>
         <button
           type="button"
-          className="reset-demo-button"
+          className="min-h-10 rounded-md border-[#c7d7f4] bg-[#f8fbff] px-3.5 text-sm font-bold text-app-primary shadow-[0_1px_2px_rgba(16,24,40,0.06)] transition hover:-translate-y-px hover:border-app-primary hover:bg-white hover:shadow-[0_8px_18px_rgba(37,99,235,0.14)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-app-primary/35 disabled:hover:translate-y-0 disabled:hover:border-[#c7d7f4] disabled:hover:bg-[#f8fbff] disabled:hover:shadow-[0_1px_2px_rgba(16,24,40,0.06)]"
           disabled={busy}
           onClick={onResetDemo}
           title="Demo verisini yenile"
         >
-          <RefreshIcon className={busy ? "spin-icon" : undefined} />
+          <RefreshIcon className={busy ? "animate-spin" : undefined} />
           <span>Demo Verisini Yenile</span>
         </button>
       </div>
 
-      <form className="create-row" onSubmit={onSubmit}>
+      <form
+        className="mb-3 grid grid-cols-[minmax(420px,2fr)_minmax(160px,0.6fr)_max-content] items-end gap-2.5 max-[720px]:grid-cols-1"
+        onSubmit={onSubmit}
+      >
         <label>
           Başlık
           <input
@@ -86,7 +89,7 @@ export function WorkflowTable({
         </button>
       </form>
 
-      <div className="table-wrap">
+      <div className="overflow-auto rounded-md border border-app-line">
         <table>
           <thead>
             <tr>
@@ -115,7 +118,7 @@ export function WorkflowTable({
                 <tr
                   key={item.id}
                   className={classNames({
-                    "selected-row": item.id === selectedWorkflowId,
+                    "[&>td]:bg-[#eef5ff]": item.id === selectedWorkflowId,
                   })}
                   onClick={() => {
                     if (!isEditing) onSelect(item);
@@ -181,12 +184,12 @@ export function WorkflowTable({
                     <StatusPill status={statusTitle} />
                   </td>
                   <td>
-                    <div className="row-actions">
+                    <div className="flex flex-wrap gap-2">
                       {isEditing ? (
                         <>
                           <button
                             type="button"
-                            className="approve-button"
+                            className="border-app-green bg-app-green text-white"
                             disabled={
                               busy ||
                               !editForm.sorumlu?.trim() ||
@@ -202,7 +205,7 @@ export function WorkflowTable({
                           </button>
                           <button
                             type="button"
-                            className="secondary-button"
+                            className="border-app-primary bg-white text-app-primary"
                             disabled={busy}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -217,7 +220,7 @@ export function WorkflowTable({
                         <>
                           <button
                             type="button"
-                            className="secondary-button"
+                            className="border-app-primary bg-white text-app-primary"
                             disabled={busy}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -229,7 +232,7 @@ export function WorkflowTable({
                           </button>
                           <button
                             type="button"
-                            className="secondary-button"
+                            className="border-app-primary bg-white text-app-primary"
                             disabled={busy || !canStart}
                             onClick={(event) => {
                               event.stopPropagation();
@@ -255,7 +258,16 @@ export function WorkflowTable({
 
 function StatusPill({ status }: any) {
   return (
-    <span className={classNames("status-pill", statusClass(status))}>
+    <span
+      className={classNames(
+        "inline-flex min-h-6 items-center whitespace-nowrap rounded-full bg-[#eef2f7] px-2.5 py-0.5 text-[#344054]",
+        {
+          "bg-[#fff4df] text-app-amber": statusClass(status) === "pending",
+          "bg-[#e8f5ee] text-app-green": statusClass(status) === "done",
+          "bg-[#e7f7f5] text-app-teal": statusClass(status) === "info",
+        },
+      )}
+    >
       {status}
     </span>
   );

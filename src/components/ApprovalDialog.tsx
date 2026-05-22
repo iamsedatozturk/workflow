@@ -10,21 +10,31 @@ export function ApprovalDialog({ busy, criteria, items, onClose, onDecision }) {
   if (!items.length) return null;
 
   return (
-    <div className="modal-backdrop" role="presentation">
+    <div
+      className="fixed inset-0 z-50 grid place-items-center bg-slate-900/40 p-[18px]"
+      role="presentation"
+    >
       <section
-        className="approval-dialog"
+        className="max-h-[calc(100vh-36px)] w-[min(560px,100%)] overflow-auto rounded-lg border border-app-line bg-app-surface p-4 shadow-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="approval-dialog-title"
       >
-        <div className="section-title compact">
+        <div className="mb-3 flex items-start justify-between gap-4 max-[720px]:flex-col max-[720px]:items-stretch">
           <div>
-            <h2 id="approval-dialog-title">Bekleyen Onaylar</h2>
-            <p>Workflow onay adiminda bekliyor.</p>
+            <h2
+              id="approval-dialog-title"
+              className="m-0 text-lg tracking-normal"
+            >
+              Bekleyen Onaylar
+            </h2>
+            <p className="mb-0 mt-1 text-app-muted">
+              Workflow onay adiminda bekliyor.
+            </p>
           </div>
           <button
             type="button"
-            className="secondary-button icon-only"
+            className="w-[38px] justify-center border-app-primary bg-white p-0 text-app-primary"
             title="Kapat"
             onClick={onClose}
           >
@@ -55,13 +65,17 @@ function PendingApprovals({
   const content = (
     <>
       {showChrome && (
-        <div className="section-title compact">
-          <h2>Bekleyen Onaylar</h2>
-          <span>{items.length} bekleyen</span>
+        <div className="mb-3 flex items-center justify-between gap-4 max-[720px]:flex-col max-[720px]:items-stretch">
+          <h2 className="m-0 text-lg tracking-normal">Bekleyen Onaylar</h2>
+          <span className="text-sm text-app-muted">
+            {items.length} bekleyen
+          </span>
         </div>
       )}
-      <div className="approval-list">
-        {items.length === 0 && <p className="empty-text">Bekleyen onay yok.</p>}
+      <div className="grid gap-2.5">
+        {items.length === 0 && (
+          <p className="m-0 text-app-muted">Bekleyen onay yok.</p>
+        )}
         {items.map((item) => {
           const activeStep = criteria.find(
             (candidate) =>
@@ -70,17 +84,20 @@ function PendingApprovals({
           );
 
           return (
-            <article key={item.id} className="approval-row">
+            <article
+              key={item.id}
+              className="grid gap-2.5 rounded-lg border border-app-line p-3"
+            >
               <div>
                 <strong>
                   #{item.id} {item.sorumlu}
                 </strong>
                 {activeStep?.title && (
-                  <span className="approval-step-title">
+                  <span className="mt-1 block text-sm font-bold text-app-text">
                     {activeStep.title}
                   </span>
                 )}
-                <span>
+                <span className="mt-1 block text-app-muted">
                   {formatMoney(item.amount)} - Onaylayacak kişi:{" "}
                   {item.assignedApprover}
                 </span>
@@ -93,10 +110,10 @@ function PendingApprovals({
                   setNotes({ ...notes, [item.id]: event.target.value })
                 }
               />
-              <div className="decision-row">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  className="approve-button"
+                  className="border-app-green bg-app-green text-white"
                   disabled={busy}
                   onClick={() =>
                     onDecision(item.id, true, notes[item.id] || "Onay verildi.")
@@ -107,7 +124,7 @@ function PendingApprovals({
                 </button>
                 <button
                   type="button"
-                  className="danger-button"
+                  className="border-app-red bg-app-red text-white"
                   disabled={busy}
                   onClick={() =>
                     onDecision(item.id, false, notes[item.id] || "Red edildi.")
@@ -126,5 +143,9 @@ function PendingApprovals({
 
   if (!showChrome) return content;
 
-  return <section className="surface">{content}</section>;
+  return (
+    <section className="min-w-0 rounded-lg border border-app-line bg-app-surface p-4">
+      {content}
+    </section>
+  );
 }

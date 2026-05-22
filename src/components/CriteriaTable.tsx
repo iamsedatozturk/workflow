@@ -92,16 +92,16 @@ export function CriteriaTable({
   const toggleRow = (id) => onSelect(id === selectedId ? "" : id);
 
   return (
-    <section className="surface criteria-manager">
-      <div className="section-title compact">
-        <h2>
+    <section className="min-w-0 rounded-lg border border-app-line bg-app-surface p-4">
+      <div className="mb-3 flex items-center justify-between gap-4 max-[720px]:flex-col max-[720px]:items-stretch">
+        <h2 className="m-0 text-lg tracking-normal">
           Adımlar
           {selectedWorkflow
             ? ` - #${selectedWorkflow.id} ${selectedWorkflow.sorumlu}`
             : ""}
         </h2>
-        <div className="criteria-title-actions">
-          <span>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <span className="text-sm text-app-muted">
             {criteria.length} kriter
             {activeNodeId ? ` / aktif: ${activeNodeId}` : ""}
           </span>
@@ -111,7 +111,7 @@ export function CriteriaTable({
               <button
                 key={option.value}
                 type="button"
-                className="secondary-button"
+                className="border-app-primary bg-white text-app-primary"
                 disabled={busy}
                 onClick={() => onAddCriteria(option.value)}
               >
@@ -123,9 +123,9 @@ export function CriteriaTable({
         </div>
       </div>
 
-      <form onSubmit={onSubmit}>
-        <div className="table-wrap">
-          <table className="criteria-edit-table">
+      <form className="block" onSubmit={onSubmit}>
+        <div className="overflow-auto rounded-md border border-app-line">
+          <table className="[&_button]:text-[13px] [&_input]:text-[13px] [&_select]:text-[13px] [&_td]:text-[13px] [&_th]:text-[13px]">
             <thead>
               <tr>
                 <th>Id</th>
@@ -148,15 +148,19 @@ export function CriteriaTable({
                   <React.Fragment key={item.id}>
                     <tr
                       className={classNames({
-                        "selected-row": isSelected,
-                        "active-row": isActive,
+                        "[&>td]:bg-[#eef5ff]": isSelected,
+                        "[&>td]:bg-[#f0fdf4] [&>td]:shadow-[inset_0_1px_0_#bbf7d0,inset_0_-1px_0_#bbf7d0]":
+                          isActive,
+                        "[&>td]:bg-[#e8f7ff]": isSelected && isActive,
                       })}
                       onClick={() => toggleRow(item.id)}
                     >
                       <td>
                         <strong>{item.id}</strong>
                         {isActive && (
-                          <span className="active-step-badge">Aktif</span>
+                          <span className="ml-2 inline-flex rounded-full bg-[#dcfce7] px-2 py-0.5 text-[11px] font-bold text-[#166534]">
+                            Aktif
+                          </span>
                         )}
                       </td>
                       <td>
@@ -171,7 +175,7 @@ export function CriteriaTable({
                       <td>
                         <button
                           type="button"
-                          className="ghost-icon-button"
+                          className="ml-1.5 min-h-8 border-[#cfd6e2] bg-white px-2.5 text-[#344054]"
                           onClick={(event) => {
                             event.stopPropagation();
                             toggleRow(item.id);
@@ -182,9 +186,9 @@ export function CriteriaTable({
                       </td>
                     </tr>
                     {isSelected && (
-                      <tr className="selected-details-row">
+                      <tr className="[&>td]:bg-slate-50 [&>td]:p-3.5">
                         <td colSpan={5}>
-                          <div className="inline-editor-grid">
+                          <div className="grid grid-cols-3 gap-2.5 max-[720px]:grid-cols-1">
                             <Field label="Tip" required>
                               <select
                                 value={form.kind}
@@ -280,12 +284,12 @@ export function CriteriaTable({
                           </div>
 
                           {form.kind === "Compare" && (
-                            <div className="table-outcomes">
-                              <div className="mini-title">
+                            <div className="grid gap-2.5 rounded-lg border border-app-line bg-slate-50 p-2.5">
+                              <div className="flex items-center justify-between gap-2 text-[13px] font-bold text-[#344054]">
                                 <span>Karşılaştırma durumları</span>
                                 <button
                                   type="button"
-                                  className="ghost-icon-button"
+                                  className="ml-1.5 min-h-8 border-[#cfd6e2] bg-white px-2.5 text-[#344054]"
                                   disabled={
                                     (form.compareOutcomes || []).length >= 4
                                   }
@@ -305,9 +309,9 @@ export function CriteriaTable({
                                 (outcome, index) => (
                                   <div
                                     key={index}
-                                    className="table-outcome-editor"
+                                    className="grid gap-2 border-t border-[#e4e7ec] pt-2 first:border-t-0 first:pt-0"
                                   >
-                                    <div className="table-outcome-row">
+                                    <div className="grid grid-cols-[minmax(130px,0.8fr)_minmax(200px,1.4fr)_auto] items-center gap-2 max-[720px]:grid-cols-1">
                                       <input
                                         required
                                         value={outcome.label}
@@ -328,7 +332,7 @@ export function CriteriaTable({
                                       )}
                                       <button
                                         type="button"
-                                        className="ghost-icon-button"
+                                        className="ml-1.5 min-h-8 border-[#cfd6e2] bg-white px-2.5 text-[#344054]"
                                         disabled={
                                           (form.compareOutcomes || []).length <=
                                           2
@@ -340,12 +344,12 @@ export function CriteriaTable({
                                         Sil
                                       </button>
                                     </div>
-                                    <div className="condition-list">
+                                    <div className="grid gap-2.5">
                                       {(outcome.conditions || []).map(
                                         (condition, conditionIndex) => (
                                           <div
                                             key={conditionIndex}
-                                            className="condition-row"
+                                            className="grid grid-cols-[minmax(100px,0.7fr)_82px_minmax(110px,0.8fr)_auto] items-center gap-1.5 max-[720px]:grid-cols-1"
                                           >
                                             <select
                                               value={condition.column}
@@ -408,7 +412,7 @@ export function CriteriaTable({
                                             />
                                             <button
                                               type="button"
-                                              className="ghost-icon-button"
+                                              className="ml-1.5 min-h-8 border-[#cfd6e2] bg-white px-2.5 text-[#344054]"
                                               disabled={
                                                 (outcome.conditions || [])
                                                   .length <= 1
@@ -427,7 +431,7 @@ export function CriteriaTable({
                                       )}
                                       <button
                                         type="button"
-                                        className="ghost-icon-button"
+                                        className="ml-1.5 min-h-8 border-[#cfd6e2] bg-white px-2.5 text-[#344054]"
                                         onClick={() =>
                                           addCompareCondition(index)
                                         }
@@ -441,14 +445,14 @@ export function CriteriaTable({
                             </div>
                           )}
 
-                          <div className="table-editor-actions">
+                          <div className="flex flex-wrap gap-2">
                             <button type="submit" disabled={busy}>
                               <SaveIcon />
                               Kaydet
                             </button>
                             <button
                               type="button"
-                              className="danger-button"
+                              className="border-app-red bg-app-red text-white"
                               disabled={busy || !form.id}
                               onClick={() => onDelete(form.id)}
                             >
@@ -472,10 +476,10 @@ export function CriteriaTable({
 
 function Field({ label, children, required = false }) {
   return (
-    <label className="field">
+    <label className="grid gap-1.5 text-[12px] text-[#344054]">
       <span>
         {label}
-        {required && <span className="required-mark"> *</span>}
+        {required && <span className="font-bold text-app-red"> *</span>}
       </span>
       {children}
     </label>
@@ -488,7 +492,7 @@ function criteriaSummaryContent(item) {
     if (!outcomes.length) return "-";
 
     return (
-      <ul className="summary-list">
+      <ul className="m-0 grid gap-1 pl-[18px] [&_li]:pl-0.5">
         {outcomes.map((outcome, index) => (
           <li key={`${outcome.label || "outcome"}-${index}`}>
             <strong>{outcome.label || `Durum ${index + 1}`}:</strong>{" "}
@@ -508,7 +512,7 @@ function criteriaConnectionSummary(item, criteria) {
     if (!outcomes.length) return "-";
 
     return (
-      <ul className="summary-list">
+      <ul className="m-0 grid gap-1 pl-[18px] [&_li]:pl-0.5">
         {outcomes.map((outcome, index) => (
           <li key={`${outcome.label || "target"}-${index}`}>
             <strong>{outcome.label || `Durum ${index + 1}`}:</strong>{" "}
@@ -521,7 +525,7 @@ function criteriaConnectionSummary(item, criteria) {
 
   if (item.kind === "Approval") {
     return (
-      <ul className="summary-list">
+      <ul className="m-0 grid gap-1 pl-[18px] [&_li]:pl-0.5">
         <li>
           <strong>Onay:</strong> {targetTitle(criteria, item.nextOnApprove)}
         </li>

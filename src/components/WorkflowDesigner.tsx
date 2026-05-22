@@ -39,7 +39,7 @@ export function WorkflowDesigner({
   onZoomOut,
 }) {
   return (
-    <section className="designer-section">
+    <section className="relative min-w-0 rounded-lg border border-app-line bg-app-surface p-4 max-[1080px]:pr-4">
       <DesignerToolbar
         busy={busy}
         currentCriteria={currentCriteria}
@@ -54,7 +54,7 @@ export function WorkflowDesigner({
       <DesignerTabs activeTab={designerTab} onChange={onSetDesignerTab} />
 
       {designerTab === "flow" && (
-        <div className="designer-grid">
+        <div className="block min-w-0 max-[1080px]:grid-cols-1">
           <DndContext
             onDragMove={onDragMove}
             onDragCancel={() => onDragMove(null)}
@@ -114,19 +114,19 @@ function DesignerToolbar({
   onZoomOut,
 }) {
   return (
-    <div className="section-title">
+    <div className="mb-3.5 flex items-center justify-between gap-4 max-[720px]:flex-col max-[720px]:items-stretch">
       <div>
-        <h2>Akış Tasarımcı</h2>
-        <p>
+        <h2 className="m-0 text-lg tracking-normal">Akış Tasarımcı</h2>
+        <p className="mb-0 mt-1 text-app-muted">
           {selectedWorkflow
             ? `#${selectedWorkflow.id} ${selectedWorkflow.sorumlu} için ayrı canvas yönetiliyor.`
             : "Bir iş kaydı seçin."}
         </p>
       </div>
-      <div className="tool-strip">
+      <div className="flex flex-wrap gap-2">
         <button
           type="button"
-          className="secondary-button"
+          className="border-app-primary bg-white text-app-primary"
           disabled={busy || currentCriteria.length === 0}
           title="Düğümleri okunabilir şekilde yerleştir"
           onClick={onFitLayout}
@@ -136,7 +136,7 @@ function DesignerToolbar({
         </button>
         <button
           type="button"
-          className="secondary-button icon-only"
+          className="w-[38px] justify-center border-app-primary bg-white p-0 text-app-primary"
           title="Yakınlaştır"
           onClick={onZoomIn}
         >
@@ -144,20 +144,22 @@ function DesignerToolbar({
         </button>
         <button
           type="button"
-          className="secondary-button icon-only"
+          className="w-[38px] justify-center border-app-primary bg-white p-0 text-app-primary"
           title="Uzaklaştır"
           onClick={onZoomOut}
         >
           <ZoomOutIcon />
         </button>
-        <span className="zoom-value">{Math.round(zoom * 100)}%</span>
+        <span className="inline-flex min-w-12 items-center justify-center text-[13px] font-bold text-app-muted">
+          {Math.round(zoom * 100)}%
+        </span>
         {kindOptions.map((option) => {
           const Icon = kindIcon[option.value];
           return (
             <button
               key={option.value}
               type="button"
-              className="secondary-button"
+              className="border-app-primary bg-white text-app-primary"
               disabled={busy}
               onClick={() => onAddCriteria(option.value)}
             >
@@ -173,11 +175,21 @@ function DesignerToolbar({
 
 function DesignerTabs({ activeTab, onChange }) {
   return (
-    <div className="designer-tabs" role="tablist" aria-label="Akış tasarımı">
+    <div
+      className="mb-3 inline-flex gap-1 rounded-lg border border-app-line bg-slate-50 p-1"
+      role="tablist"
+      aria-label="Akış tasarımı"
+    >
       <button
         type="button"
         role="tab"
-        className={classNames("tab-button", { active: activeTab === "flow" })}
+        className={classNames(
+          "min-h-8 border-transparent bg-transparent text-[#475467]",
+          {
+            "border-[#c7d7f4] bg-white text-app-primary":
+              activeTab === "flow",
+          },
+        )}
         onClick={() => onChange("flow")}
       >
         Akış
@@ -185,9 +197,13 @@ function DesignerTabs({ activeTab, onChange }) {
       <button
         type="button"
         role="tab"
-        className={classNames("tab-button", {
-          active: activeTab === "criteria",
-        })}
+        className={classNames(
+          "min-h-8 border-transparent bg-transparent text-[#475467]",
+          {
+            "border-[#c7d7f4] bg-white text-app-primary":
+              activeTab === "criteria",
+          },
+        )}
         onClick={() => onChange("criteria")}
       >
         Adımlar
@@ -195,9 +211,13 @@ function DesignerTabs({ activeTab, onChange }) {
       <button
         type="button"
         role="tab"
-        className={classNames("tab-button", {
-          active: activeTab === "history",
-        })}
+        className={classNames(
+          "min-h-8 border-transparent bg-transparent text-[#475467]",
+          {
+            "border-[#c7d7f4] bg-white text-app-primary":
+              activeTab === "history",
+          },
+        )}
         onClick={() => onChange("history")}
       >
         Akış Geçmişi
@@ -210,17 +230,17 @@ function ApprovalHistoryTable({ selectedWorkflow }: any) {
   const history = selectedWorkflow?.history || [];
 
   return (
-    <section className="surface approval-history-panel">
-      <div className="section-title compact">
-        <h2>
+    <section className="min-w-0 rounded-lg border border-app-line bg-app-surface p-4">
+      <div className="mb-3 flex items-center justify-between gap-4 max-[720px]:flex-col max-[720px]:items-stretch">
+        <h2 className="m-0 text-lg tracking-normal">
           Akış Geçmişi
           {selectedWorkflow
             ? ` - #${selectedWorkflow.id} ${selectedWorkflow.sorumlu}`
             : ""}
         </h2>
-        <span>{history.length} kayıt</span>
+        <span className="text-sm text-app-muted">{history.length} kayıt</span>
       </div>
-      <div className="table-wrap">
+      <div className="overflow-auto rounded-md border border-app-line">
         <table>
           <thead>
             <tr>

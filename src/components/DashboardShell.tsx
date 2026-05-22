@@ -50,9 +50,9 @@ export function DashboardShell({
   onZoomOut,
 }) {
   return (
-    <div className="app-shell">
-      <main>
-        <section className="top-grid">
+    <div className="min-h-screen">
+      <main className="grid gap-[18px] p-[18px]">
+        <section className="grid grid-cols-1 gap-[18px]">
           <WorkflowTable
             items={workflowItems}
             criteria={criteria}
