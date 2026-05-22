@@ -92,37 +92,7 @@ export function CriteriaTable({
   const toggleRow = (id) => onSelect(id === selectedId ? "" : id);
 
   return (
-    <section className="min-w-0 rounded-lg border border-app-line bg-app-surface p-4">
-      <div className="mb-3 flex items-center justify-between gap-4 max-[720px]:flex-col max-[720px]:items-stretch">
-        <h2 className="m-0 text-lg tracking-normal">
-          Adımlar
-          {selectedWorkflow
-            ? ` - #${selectedWorkflow.id} ${selectedWorkflow.sorumlu}`
-            : ""}
-        </h2>
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <span className="text-sm text-app-muted">
-            {criteria.length} kriter
-            {activeNodeId ? ` / aktif: ${activeNodeId}` : ""}
-          </span>
-          {kindOptions.map((option) => {
-            const Icon = kindIcon[option.value];
-            return (
-              <button
-                key={option.value}
-                type="button"
-                className="border-app-primary bg-white text-app-primary"
-                disabled={busy}
-                onClick={() => onAddCriteria(option.value)}
-              >
-                <Icon />
-                Yeni {option.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
+    <section className="min-w-0 rounded-lg">
       <form className="block" onSubmit={onSubmit}>
         <div className="overflow-auto rounded-md border border-app-line">
           <table className="[&_button]:text-[13px] [&_input]:text-[13px] [&_select]:text-[13px] [&_td]:text-[13px] [&_th]:text-[13px]">

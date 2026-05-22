@@ -39,9 +39,12 @@ export function WorkflowTable({
   return (
     <section className="min-w-0 rounded-lg border border-app-line bg-app-surface p-4">
       <div className="mb-3 flex items-start justify-between gap-4 max-[720px]:flex-col max-[720px]:items-stretch">
-        <div className="grid gap-1">
+        <div className="flex items-center gap-3">
           <h2 className="m-0 text-lg tracking-normal">WorkflowItems Tablosu</h2>
-          <span className="text-sm text-app-muted">{items.length} kayıt</span>
+
+          <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700">
+            {items.length} kayıt
+          </span>
         </div>
         <button
           type="button"
@@ -260,7 +263,7 @@ function StatusPill({ status }: any) {
   return (
     <span
       className={classNames(
-        "inline-flex min-h-6 items-center whitespace-nowrap rounded-full bg-[#eef2f7] px-2.5 py-0.5 text-[#344054]",
+        "inline-flex min-h-3 items-center whitespace-nowrap rounded-full bg-[#eef2f7] px-1.5 py-0.5 text-[#344054]",
         {
           "bg-[#fff4df] text-app-amber": statusClass(status) === "pending",
           "bg-[#e8f5ee] text-app-green": statusClass(status) === "done",
